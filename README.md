@@ -1,4 +1,4 @@
-Anything with a * next to it is further explained at the bottom.
+Words with a * next to it is explained in the Deeper Explanations section.
 
 # Wildlife Health Data Warehouse
 Project Lead: Luke Herron | Institution: University of Technology Sydney

@@ -49,6 +49,17 @@ CREATE TABLE IF NOT EXISTS dim_agency (
 );
 """
 
+sql_dim_environment = """
+CREATE TABLE IF NOT EXISTS dim_environment (
+    env_id SERIAL PRIMARY KEY,
+    state VARCHAR(3) CHECK (state IN ('NSW', 'QLD', 'VIC', 'TAS', 'SA', 'WA', 'NT', 'ACT')), 
+    climate_zone VARCHAR(50),
+    phenological_season_name VARCHAR(100),
+    is_breeding_season BOOLEAN,
+    is_fire_season BOOLEAN
+);
+"""
+
 sql_fact_observations = """
 CREATE TABLE IF NOT EXISTS fact_observations (
     observation_id SERIAL PRIMARY KEY,
@@ -56,6 +67,7 @@ CREATE TABLE IF NOT EXISTS fact_observations (
     animal_id INTEGER REFERENCES dim_animal(animal_id),
     location_id INTEGER REFERENCES dim_location(location_id),
     agency_id INTEGER REFERENCES dim_agency(agency_id),
+    env_id INTEGER REFERENCES dim_environment(env_id),
     body_temperature DECIMAL(4,2),
     weight DECIMAL(5,2),
     health_status_score SMALLINT CHECK (health_status_score BETWEEN 1 AND 5),
@@ -72,6 +84,7 @@ def init_warehouse():
             conn.execute(text(sql_dim_animal))
             conn.execute(text(sql_dim_location))
             conn.execute(text(sql_dim_agency))
+            conn.execute(text(sql_dim_environment))
             conn.execute(text(sql_fact_observations))
             
             conn.commit()
