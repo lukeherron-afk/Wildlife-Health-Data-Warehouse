@@ -3,4 +3,6 @@ venv/
 __pycache__/
 *.pyc
 .DS_Store
+*.png
 TODO.txt
+git_workflow.txt

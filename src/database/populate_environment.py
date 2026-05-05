@@ -27,7 +27,7 @@ def populate_dim_environment():
     for state in states:
         for zone in climate_zones:
             if state == 'NSW' and zone == 'Temperate':
-                # Special Case Test: NSW D'harawal Seasons
+                #* Special Case Test: NSW D'harawal Seasons
                 dharawal = [
                     ('Burran', True, False),                                                                # Jan-Mar: Kangaroo breeding
                     ('Marrai\'gang', True, False),                                                          # Apr-Jun: Quoll breeding
