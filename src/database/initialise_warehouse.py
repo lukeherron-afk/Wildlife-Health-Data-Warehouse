@@ -1,13 +1,6 @@
-import os
-from dotenv import load_dotenv
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 
-load_dotenv()
-db_url = os.getenv("DATABASE_URL")
-if not db_url:
-    raise ValueError("!!! DATABASE_URL not found in .env file!")
-
-engine = create_engine(db_url)
+from src.utils import get_engine
 
 sql_dim_date = """
 CREATE TABLE IF NOT EXISTS dim_date (
@@ -77,7 +70,21 @@ CREATE TABLE IF NOT EXISTS fact_observations (
 
 def init_warehouse():
     try:
+        engine = get_engine()
         with engine.connect() as conn:
+            print("Cleaning up warehouse...")
+
+            # Drop tables in reverse order of dependencies (Fact first, then Dimensions)
+            tables = [
+                "fact_observations", "dim_date", "dim_animal", 
+                "dim_location", "dim_agency", "dim_environment"
+            ]
+
+            for table in tables:
+                conn.execute(text(f"DROP TABLE IF EXISTS {table} CASCADE;"))
+            
+            conn.commit()
+
             print("Connecting to PostgreSQL...")
             
             conn.execute(text(sql_dim_date))

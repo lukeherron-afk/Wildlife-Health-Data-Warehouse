@@ -1,44 +1,76 @@
-import os
+import math
+import random
 import pandas as pd
-from sqlalchemy import create_engine
-from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
-load_dotenv()
-db_url = os.getenv("DATABASE_URL")
-if not db_url:
-    raise ValueError("!!! DATABASE_URL not found in .env file!")
+# Clean import using our new module setup
+from src.utils.db_utils import get_engine
 
-engine = create_engine(db_url)
 
-def get_australian_season(month):                                                           # TODO: To be improved, too rough of an estimate
-    if month in [12, 1, 2]: return 'Summer'
-    if month in [3, 4, 5]: return 'Autumn'
-    if month in [6, 7, 8]: return 'Spring'
-    return 'Spring'
+# Simulates Australian daily temperatures using a cosine wave. Peaks around late January, lowest in late July.
+def simulate_temperature_curve(df): 
+    # 20 base temp, +/- 10 degrees amplitude, peaking at day 30 (Jan 30)
+    df['day_of_year'] = df['full_date'].dt.dayofyear
+    df['base_temp'] = df['day_of_year'].apply(
+        lambda x: 20 + 10 * math.cos(2 * math.pi * (x - 30) / 365.25)
+    )
+    
+    # Adding random noise (between -3 and +3 degrees)
+    df['daily_temp'] = df['base_temp'] + df['base_temp'].apply(lambda x: random.uniform(-3, 3))
+    
+    return df
 
-    #? Can pull actual temperature and rainfall data from the Bureau of Meteorology (BOM) to confirm the season. Need to add more coloumns into the observations table to detail this.
-    #? Maybe can do it by tracking data? Although seems very complex and time wasteful. e.g. breeding season, migration season, etc.
-    #* A season starts when the 7-day rolling average temperature hits a certain threshold.
+# Determines the season based on rolling temperatures and trajectory.
+def get_australian_season(row):
+    temp = row['rolling_temp']
+    temp_change = row['temp_trajectory']
+    
+    if temp >= 23.0:
+        return 'Summer'
+    elif temp <= 16.0:
+        return 'Winter'
+    # If in the middle, determine season by checking if the earth is warming or cooling
+    elif temp_change < 0: 
+        return 'Autumn'
+    else:
+        return 'Spring'
 
 def populate_dim_date():
-    print("Populating Date Dimension...")
+    print("Populating Date Dimension with rolling temperature logic...")
 
+    # The date range
     start_date = '2024-01-01'
-    end_date = (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')                  #* Future proofing. Basically today + 1 year.
+    end_date = (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')
     dates = pd.date_range(start_date, end_date)
 
     df_date = pd.DataFrame({'full_date': dates})
 
+    # Dimension Columns
     df_date['date_id'] = df_date['full_date'].dt.strftime('%Y%m%d').astype(int)
     df_date['day_of_week'] = df_date['full_date'].dt.day_name()
     df_date['month_name'] = df_date['full_date'].dt.month_name()
     df_date['calendar_year'] = df_date['full_date'].dt.year
-    df_date['season'] = df_date['full_date'].dt.month.apply(get_australian_season)
+
+    # --- ADVANCED SEASON LOGIC (DSR Prototype Feature) ---
+    df_date = simulate_temperature_curve(df_date)
+    
+    # Calculate 7-day rolling average (min_periods=1 handles the first 6 days)
+    df_date['rolling_temp'] = df_date['daily_temp'].rolling(window=7, min_periods=1).mean()
+    
+    # Calculate trajectory to differentiate Spring (warming) from Autumn (cooling) by comparing today's rolling average to the rolling average 14 days ago
+    df_date['temp_trajectory'] = df_date['rolling_temp'].diff(periods=14).fillna(0)
+    
+    df_date['season'] = df_date.apply(get_australian_season, axis=1)
+
+    # Dropping temp columns to not break the SQL insert
+    df_date = df_date.drop(columns=['day_of_year', 'base_temp', 'daily_temp', 'rolling_temp', 'temp_trajectory'])
 
     try:
-        df_date.to_sql('dim_date', engine, if_exists='append', index=False)
-        print(f"--- {len(df_date)} days loaded into 'dim_date'. ---")
+        engine = get_engine()
+        
+        with engine.begin() as conn:
+            df_date.to_sql('dim_date', conn, if_exists='append', index=False)
+            print(f"--- {len(df_date)} days loaded into 'dim_date'. ---")
     except Exception as e:
         print(f"!!! Error during date population: {e}")
 
