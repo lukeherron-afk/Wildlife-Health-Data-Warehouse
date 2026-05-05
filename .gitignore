@@ -1,8 +1,8 @@
-venv/
 .env
 __pycache__/
-*.pyc
-.DS_Store
-*.png
-TODO.txt
+venv/
+*.py[cod]
+pgdata/
+docs/*.png
 git_workflow.txt
+TODO.txt

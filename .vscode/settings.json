@@ -1,0 +1,10 @@
+{
+    "terminal.integrated.tabs.enabled": true,
+    "terminal.integrated.cwd": "${workspaceFolder}\\src",
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "args": ["-NoExit", "-Command", "Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned; & ..\\venv\\Scripts\\Activate.ps1; cd .."]
+        }
+    }
+}

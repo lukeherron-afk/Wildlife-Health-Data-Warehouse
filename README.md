@@ -5,19 +5,35 @@ Project Lead: Luke Herron | Institution: University of Technology Sydney
 This repository contains the architecture and ETL pipeline for a specialised wildlife health data warehouse that specifically adheres to the FAIR (Findable, Accessible, Interoperable, Reusable) and CARE (Collective Benefit, Authority to Control, Responsibility, Ethics) Guiding Principles. Guided by the One Health approach, that recognises the interconnections between human, animal, and environmental health, the project addresses critical gaps in veterinary data standards. The goal is to provide a secure, scalable, and ethical solution for multi-agency data integration and ensuring Indigenous Data Sovereignty is maintained alongside scientific utility.
 
 ## Core Features
-- Optimised Star Schema Dimensional Model for high-performance querying of clinical observations.
-- Standarised indexing and metadata structures within a PostgreSQL environment to ensure easy indexing and discovery. 
-- Automated mapping of GPS coordinates (longitude/latitude) to Indigenous Country names within the _dim_location_ table.
-- Built to allow for cross-database integration with other global health and biodiversity repositories.
-- A Python-driven Automated ETL Pipeline for cleaning and validation of raw veterinary field data into a central repository.
-- Centralised Security Model to enforce robust access rules and data-sharing agreements between multiple agencies.
-- Scalable Analytics with a focus on supporting longitudinal health trend analysis across diverse Australian species.
+- Integrated Star Schema: Optimised for high-performance querying of clinical observations.
+- Sovereign Data Mapping: Automated GPS-to-Country enrichment in the `dim_location` table.
+- Validated ETL Pipeline: Python-driven cleaning and biological validation of raw veterinary field data.
+- Interactive Analytics: A Streamlit dashboard for real-time health trend analysis.
+- Dockerized Architecture: One-click deployment.
 
-## Local Setup & Installation
-Follow these steps to set up the Wildlife Health Data Warehouse environment on a new machine.
+## Docker Deployment
+
+### 1. Clone the Repository
+```bash
+git clone <https://github.com/lukeherron-afk/Wildlife-Health-Data-Warehouse.git>
+cd WILDLIFE_HEALTH_DATA_WAREHOUSE
+```
+
+### 2. Launch with Docker
+```bash
+docker-compose up --build
+```
+*This command initialises the PostgreSQL database, runs the full ETL pipeline, and starts the Streamlit UI.*
+
+### 3. Launch Analytics
+Navigate to *http://localhost:8501/* in a browser to experience the Interactive Analytics.
+
+---
+
+## Manual Local Setup (Alternative)
 
 ### Prerequisites
-* **Python 3.10+** installed on your system.
+* **Python 3.11+** installed on your system.
 * **PostgreSQL** installed and running locally.
 
 ### 1. Clone the Repository
@@ -51,14 +67,25 @@ Create a file named .env in the root directory of the project and add your Postg
 ```plaintext
 DATABASE_URL=postgresql://<username>:<password>@localhost:5432/wildlife_health
 ```
-
-Before proceeding, ensure your local PostgreSQL instance has a database created named wildlife_health.
+*Before proceeding, ensure your local PostgreSQL instance has a database created named wildlife_health.*
 
 ### 5. Initialize the Data Warehouse
 Run the ETL pipeline scripts in the following order to build the schema and populate the mock data:
 ```bash
-python src/database/initialise_warehouse.py
-python src/database/populate_dates.py
-python src/database/populate_environment.py
-python src/database/generate_mock_data.py
+python -m src.database.initialise_warehouse
+python -m src.database.populate_dates
+python -m src.database.populate_environment
+python -m src.database.generate_mock_data
 ```
+
+### 6. Launch Analytics
+```bash
+# Run the Interactive Dashboard
+streamlit run src/dashboard.py
+
+# OR Generate Static PNG Reports
+python -m src.analysis.generate_health_report
+```
+
+## Research Context
+This prototype was developed using the Design Science Research (DSR) methodology as part of an Engineering Capstone project. It serves as a proof-of-concept for bridging the gap between scientific biodiversity repositories and ethical data governance frameworks.
